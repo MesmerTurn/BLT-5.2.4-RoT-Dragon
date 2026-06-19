@@ -26,11 +26,12 @@ namespace BLTAdoptAHero.Patches
     }
 
     // Damage: multiply blow damage by prestige damage bonus
+    // Parameter is named "b" in TaleWorlds.MountAndBlade.Mission.RegisterBlow
     [HarmonyPatch(typeof(Mission), "RegisterBlow"), UsedImplicitly]
     public static class PrestigeDamagePatch
     {
         [UsedImplicitly]
-        public static void Prefix(Agent attacker, ref Blow blow)
+        public static void Prefix(Agent attacker, ref Blow b)
         {
             if (attacker == null) return;
             var hero = (attacker.Character as CharacterObject)?.HeroObject;
@@ -43,8 +44,8 @@ namespace BLTAdoptAHero.Patches
             if (dmgBonus <= 0) return;
 
             float mult = 1f + dmgBonus / 100f;
-            blow.BaseMagnitude *= mult;
-            blow.InflictedDamage = (int)(blow.InflictedDamage * mult);
+            b.BaseMagnitude *= mult;
+            b.InflictedDamage = (int)(b.InflictedDamage * mult);
         }
     }
 
