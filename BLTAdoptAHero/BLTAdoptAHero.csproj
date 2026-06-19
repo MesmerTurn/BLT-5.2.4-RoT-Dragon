@@ -347,6 +347,9 @@
     <Compile Include="Prestige\PrestigeLevelDef.cs" />
     <Compile Include="Prestige\PrestigeSettings.cs" />
     <Compile Include="Patches\PrestigeStatPatches.cs" />
+    <Compile Include="Actions\UpgradeClass.cs" />
+    <Compile Include="ClassProgression\ClassProgressionNode.cs" />
+    <Compile Include="ClassProgression\ClassProgressionTree.cs" />
     <Compile Include="Actions\AuctionItem.cs" />
     <Compile Include="Actions\SetHeroClass.cs" />
     <Compile Include="Actions\SimpleDiplomacy.cs" />

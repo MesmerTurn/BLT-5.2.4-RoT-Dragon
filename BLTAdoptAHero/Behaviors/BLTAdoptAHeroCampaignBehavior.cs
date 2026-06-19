@@ -62,6 +62,8 @@ namespace BLTAdoptAHero
             public string LegacyName { get; set; } = null;
             public int PrestigeLevel { get; set; } = 0;
             public int PrestigeKillCount { get; set; } = 0;
+            public string ProgressionClass { get; set; } = null;
+            public int ProgressionKills { get; set; } = 0;
 
             //public bool MesssageFlag { get; set; } = false;
             //public string MessageContent { get; set; } = null;
@@ -857,6 +859,13 @@ namespace BLTAdoptAHero
             => BLTAdoptAHeroModule.HeroClassConfig.GetClass(GetHeroData(hero).EquipmentClassID);
         public void SetEquipmentClass(Hero hero, HeroClassDef classDef)
             => GetHeroData(hero).EquipmentClassID = classDef?.ID ?? Guid.Empty;
+
+        // --- Class Progression ---
+        public string GetProgressionClass(Hero hero) => GetHeroData(hero).ProgressionClass;
+        public void SetProgressionClass(Hero hero, string className) => GetHeroData(hero).ProgressionClass = className;
+        public int GetProgressionKills(Hero hero) => GetHeroData(hero).ProgressionKills;
+        public void IncrementProgressionKill(Hero hero) => GetHeroData(hero).ProgressionKills++;
+        public void ResetProgressionKills(Hero hero) => GetHeroData(hero).ProgressionKills = 0;
         #endregion
 
         #region Custom Items

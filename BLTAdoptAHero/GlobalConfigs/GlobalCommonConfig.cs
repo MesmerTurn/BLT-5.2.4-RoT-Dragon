@@ -15,6 +15,7 @@ using BLTAdoptAHero.Achievements;
 using BLTAdoptAHero.Actions.Util;
 using BLTAdoptAHero.Actions.Upgrades;
 using BLTAdoptAHero.Prestige;
+using BLTAdoptAHero.ClassProgression;
 using BLTAdoptAHero.UI;
 using TaleWorlds.Library;
 using TaleWorlds.TwoDimension;
@@ -616,6 +617,14 @@ namespace BLTAdoptAHero
          LocDescription("Settings for the !prestige command. Heroes who reach T8 can prestige for cumulative kill gold/XP bonuses."),
          PropertyOrder(1), ExpandableObject, Expand, UsedImplicitly]
         public PrestigeSettings PrestigeConfig { get; set; } = new();
+        #endregion
+
+        #region Class Progression
+        [LocDisplayName("Class Progression"),
+         LocCategory("Class Progression", "Class Progression"),
+         LocDescription("Settings for the !upgrade command. Heroes earn kills to unlock new classes along a progression tree."),
+         PropertyOrder(1), ExpandableObject, Expand, UsedImplicitly]
+        public ClassProgressionTree ClassProgression { get; set; } = new();
         #endregion
 
         #region Battle End Rewards
