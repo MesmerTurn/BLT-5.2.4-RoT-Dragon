@@ -10,9 +10,9 @@ using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 namespace BLTAdoptAHero
 {
     [LocDisplayName("Prestige Hero"),
-     LocDescription("Resets the hero to Tier 1 and increases their Prestige level, granting cumulative kill gold/XP bonuses. "
-                    + "Requires the hero to be at Tier 8 and have enough kills. "
-                    + "Configure bonuses per level in Global Common Config > Prestige System."),
+     LocDescription("Shows prestige status when requirements are not met. "
+                    + "Resets hero to T1 and increases Prestige level when all requirements are met. "
+                    + "Configure bonuses in Global Common Config > Prestige System."),
      UsedImplicitly]
     public class PrestigeHero : ActionHandlerBase
     {
@@ -23,14 +23,20 @@ namespace BLTAdoptAHero
              PropertyOrder(0), UsedImplicitly]
             public bool AllowCompanionPrestige { get; set; } = false;
 
+            [LocDisplayName("Status Only"),
+             LocDescription("If enabled, command only shows status — never actually prestiges. Useful for a separate '!prestigeinfo' command."),
+             PropertyOrder(1), UsedImplicitly]
+            public bool StatusOnly { get; set; } = false;
+
             public void GenerateDocumentation(IDocumentationGenerator generator)
             {
                 var cfg = BLTAdoptAHeroModule.CommonConfig.PrestigeConfig;
+                generator.PropertyValuePair("Min Tier Required", $"T{cfg.MinTierRequired}");
                 generator.PropertyValuePair("Required Kills", $"{cfg.RequireKills}");
                 generator.PropertyValuePair("Requires Channel Points", $"{cfg.RequireChannelPoints}");
                 if (cfg.RequireChannelPoints)
                     generator.PropertyValuePair("Channel Points Cost", $"{cfg.ChannelPointsCost}");
-                generator.PropertyValuePair("Max Prestige Level", $"{cfg.MaxPrestigeLevel}");
+                generator.PropertyValuePair("Max Prestige Level", $"P{cfg.MaxPrestigeLevel}");
             }
         }
 
@@ -40,7 +46,6 @@ namespace BLTAdoptAHero
             Action<string> onSuccess, Action<string> onFailure)
         {
             var settings = config as Settings ?? new Settings();
-
             var adoptedHero = BLTAdoptAHeroCampaignBehavior.Current.GetAdoptedHero(context.UserName);
             if (adoptedHero == null)
             {
@@ -48,72 +53,89 @@ namespace BLTAdoptAHero
                 return;
             }
 
+            var prestigeCfg = BLTAdoptAHeroModule.CommonConfig.PrestigeConfig;
+            int currentTier    = BLTAdoptAHeroCampaignBehavior.Current.GetEquipmentTier(adoptedHero) + 1; // 1-based
+            int currentPrestige = BLTAdoptAHeroCampaignBehavior.Current.GetPrestigeLevel(adoptedHero);
+            int killCount      = BLTAdoptAHeroCampaignBehavior.Current.GetPrestigeKillCount(adoptedHero);
+            string title       = prestigeCfg.GetChatTitle(currentPrestige);
+            string titlePrefix = string.IsNullOrEmpty(title) ? "" : $"{title} ";
+
+            // --- Always build a status string ---
+            string status;
+            bool canPrestige = true;
+            string blocker = null;
+
             if (!settings.AllowCompanionPrestige && adoptedHero.IsPlayerCompanion)
             {
-                onFailure("You are a player companion and cannot prestige!");
+                status = $"{titlePrefix}P{currentPrestige} | T{currentTier} | Companions cannot prestige.";
+                onSuccess(status);
+                return;
+            }
+
+            if (currentPrestige >= prestigeCfg.MaxPrestigeLevel)
+            {
+                string bonuses = prestigeCfg.GetBonusSummary(currentPrestige);
+                status = $"{titlePrefix}P{currentPrestige} MAX | Bonuses: {bonuses}";
+                onSuccess(status);
+                return;
+            }
+
+            // Check requirements
+            bool tierOk  = currentTier >= prestigeCfg.MinTierRequired;
+            bool killsOk = prestigeCfg.RequireKills <= 0 || killCount >= prestigeCfg.RequireKills;
+
+            if (!tierOk)
+            {
+                canPrestige = false;
+                blocker = $"Need T{prestigeCfg.MinTierRequired} (current T{currentTier})";
+            }
+            else if (!killsOk)
+            {
+                canPrestige = false;
+                int needed = prestigeCfg.RequireKills - killCount;
+                blocker = $"Need {needed} more kills ({killCount}/{prestigeCfg.RequireKills})";
+            }
+
+            int nextLevel = currentPrestige + 1;
+            string nextBonuses = prestigeCfg.GetBonusSummary(nextLevel);
+
+            if (!canPrestige || settings.StatusOnly)
+            {
+                string blockMsg = blocker != null ? $" | BLOCKED: {blocker}" : "";
+                status = $"{titlePrefix}P{currentPrestige} → P{nextLevel} | T{currentTier}/{prestigeCfg.MinTierRequired} | Kills: {killCount}/{prestigeCfg.RequireKills}{blockMsg} | Next bonuses: {nextBonuses}";
+                if (canPrestige && settings.StatusOnly)
+                    status += " | Ready to prestige! Redeem channel points to confirm.";
+                onSuccess(status);
+                return;
+            }
+
+            // Channel points check — when used as free command and channel points required
+            if (prestigeCfg.RequireChannelPoints && !context.IsSubscriber && !context.IsModerator && !context.IsBroadcaster)
+            {
+                status = $"{titlePrefix}P{currentPrestige} → P{nextLevel} | Ready! Redeem {prestigeCfg.ChannelPointsCost} Channel Points to prestige. | Next: {nextBonuses}";
+                onSuccess(status);
                 return;
             }
 
             if (Mission.Current != null)
             {
-                onFailure("You cannot prestige during an active battle!");
+                onFailure("Cannot prestige during an active battle!");
                 return;
             }
 
-            var prestigeCfg = BLTAdoptAHeroModule.CommonConfig.PrestigeConfig;
-            int currentTier = BLTAdoptAHeroCampaignBehavior.Current.GetEquipmentTier(adoptedHero);
-            int currentPrestige = BLTAdoptAHeroCampaignBehavior.Current.GetPrestigeLevel(adoptedHero);
-            int killCount = BLTAdoptAHeroCampaignBehavior.Current.GetPrestigeKillCount(adoptedHero);
-
-            // Must be at T8 (tier index 7)
-            if (currentTier < 7)
-            {
-                onFailure($"You must reach Tier 8 before prestiging! (Current: T{currentTier + 1})");
-                return;
-            }
-
-            // Kill requirement
-            if (prestigeCfg.RequireKills > 0 && killCount < prestigeCfg.RequireKills)
-            {
-                onFailure($"You need {prestigeCfg.RequireKills - killCount} more kills before you can prestige! ({killCount}/{prestigeCfg.RequireKills})");
-                return;
-            }
-
-            // Channel points requirement — when used as a free command and channel points are required, block it
-            if (prestigeCfg.RequireChannelPoints && !context.IsSubscriber && !context.IsModerator && !context.IsBroadcaster)
-            {
-                onFailure($"Prestige requires {prestigeCfg.ChannelPointsCost} Channel Points — redeem the reward on the channel point rewards list!");
-                return;
-            }
-
-            // Max prestige check
-            if (currentPrestige >= prestigeCfg.MaxPrestigeLevel)
-            {
-                onFailure($"You have already reached the maximum prestige level (P{prestigeCfg.MaxPrestigeLevel})!");
-                return;
-            }
-
-            // Do the prestige
+            // Execute prestige
             bool success = BLTAdoptAHeroCampaignBehavior.Current.DoPrestige(adoptedHero);
             if (!success)
             {
-                onFailure("Prestige failed — maximum prestige level already reached!");
+                onFailure("Prestige failed — maximum level already reached!");
                 return;
             }
 
             int newPrestige = BLTAdoptAHeroCampaignBehavior.Current.GetPrestigeLevel(adoptedHero);
-            string title = prestigeCfg.GetChatTitle(newPrestige);
-            int goldBonus = prestigeCfg.GetCumulativeGoldBonusPercent(newPrestige);
-            float xpMult  = prestigeCfg.GetCumulativeXPMultiplier(newPrestige);
+            string newTitle = prestigeCfg.GetChatTitle(newPrestige);
+            string allBonuses = prestigeCfg.GetBonusSummary(newPrestige);
 
-            string bonusSummary = $"+{goldBonus}% gold per kill";
-            if (xpMult > 1.0f)
-                bonusSummary += $", {xpMult:F1}x XP per kill";
-            int invSec = prestigeCfg.GetInvincibleSeconds(newPrestige);
-            if (invSec > 0)
-                bonusSummary += $", {invSec}s battle invincibility";
-
-            onSuccess($"{title} {context.UserName} has prestiged to P{newPrestige}! Equipment reset to T1. Cumulative bonuses: {bonusSummary}");
+            onSuccess($"{newTitle} {context.UserName} prestiged to P{newPrestige}! Equipment reset to T1. Total bonuses: {allBonuses}");
         }
     }
 }
