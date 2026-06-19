@@ -49,25 +49,6 @@ namespace BLTAdoptAHero.Patches
         }
     }
 
-    // Speed: multiply agent forward speed by prestige speed bonus
-    [HarmonyPatch(typeof(Agent), "MaximumForwardUnlimitedSpeed", MethodType.Getter), UsedImplicitly]
-    public static class PrestigeSpeedPatch
-    {
-        [UsedImplicitly]
-        public static void Postfix(Agent __instance, ref float __result)
-        {
-            var hero = (__instance.Character as CharacterObject)?.HeroObject;
-            if (hero == null) return;
-
-            int prestige = BLTAdoptAHeroCampaignBehavior.Current?.GetPrestigeLevel(hero) ?? 0;
-            if (prestige <= 0) return;
-
-            int spdBonus = BLTAdoptAHeroModule.CommonConfig.PrestigeConfig.GetCumulativeSpeedBonusPercent(prestige);
-            if (spdBonus > 0)
-                __result *= 1f + spdBonus / 100f;
-        }
-    }
-
     // Armor: add flat armor bonus to adopted heroes
     [HarmonyPatch(typeof(Agent), "GetBaseArmorEffectivenessForBodyPart"), UsedImplicitly]
     public static class PrestigeArmorPatch
