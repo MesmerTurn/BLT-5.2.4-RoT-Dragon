@@ -272,14 +272,16 @@ namespace BLTAdoptAHero
 
             // These functions select new equipment, preferring to use the availableItems list above, then
             // falling back to the full item list
-            EquipmentElement FindNewEquipment(Func<ItemObject, bool> filter = null, FindFlags flags = FindFlags.None)
+            EquipmentElement FindNewEquipment(Func<ItemObject, bool> filter = null, FindFlags flags = FindFlags.None, bool? overrideMounted = null)
             {
                 var oldEquipment = availableItems.FirstOrDefault(i => filter?.Invoke(i.Item) != false);
                 if (!oldEquipment.IsEmpty)
                     return oldEquipment;
 
+                bool mounted = overrideMounted ?? classDef?.Mounted == true;
+
                 // Try first without allowing duplicates
-                var foundItem = FindRandomTieredEquipment(targetTier, adoptedHero, classDef?.Mounted == true, flags,
+                var foundItem = FindRandomTieredEquipment(targetTier, adoptedHero, mounted, flags,
                     o => filter?.Invoke(o) != false
                         && !restrictedItemIds.Contains(o.StringId ?? "")
                         && !currentlyEquippedItemIds.Contains(o.StringId ?? ""),
@@ -288,7 +290,7 @@ namespace BLTAdoptAHero
                 // Try again but with lower tier
                 if (foundItem == null)
                 {
-                    foundItem = FindRandomTieredEquipment(targetTier-1, adoptedHero, classDef?.Mounted == true, flags,
+                    foundItem = FindRandomTieredEquipment(targetTier-1, adoptedHero, mounted, flags,
                     o => filter?.Invoke(o) != false
                         && !restrictedItemIds.Contains(o.StringId ?? "")
                         && !currentlyEquippedItemIds.Contains(o.StringId ?? ""),
@@ -298,7 +300,7 @@ namespace BLTAdoptAHero
                 // If nothing found and we had duplicate restrictions, try again allowing duplicates
                 if (foundItem == null && currentlyEquippedItemIds.Any())
                 {
-                    foundItem = FindRandomTieredEquipment(targetTier, adoptedHero, classDef?.Mounted == true, flags,
+                    foundItem = FindRandomTieredEquipment(targetTier, adoptedHero, mounted, flags,
                         o => filter?.Invoke(o) != false
                             && !restrictedItemIds.Contains(o.StringId ?? ""),
                         cultureFilter, cultureFilterSpecified);
@@ -307,7 +309,7 @@ namespace BLTAdoptAHero
                 // Try one last time without culture filter
                 if (foundItem == null && cultureFilterSpecified == true)
                 {
-                    foundItem = FindRandomTieredEquipment(targetTier, adoptedHero, classDef?.Mounted == true, flags,
+                    foundItem = FindRandomTieredEquipment(targetTier, adoptedHero, mounted, flags,
                         o => filter?.Invoke(o) != false
                             && !restrictedItemIds.Contains(o.StringId ?? ""),
                         cultureFilter, false);
@@ -336,8 +338,14 @@ namespace BLTAdoptAHero
                 foreach (var (equipmentType, slot) in classDef.SlotItems
                             .Zip(adoptedHero.BattleEquipment.YieldWeaponSlots(), (equipmentType, slot) => (equipmentType, slot)))
                 {
+                    // Glaives often have RequiresNoMount flag — ignore mounted restriction so glaive is always picked over lance
+                    bool? mountedOverride = equipmentType is EquipmentType.OneHandedGlaive or EquipmentType.TwoHandedGlaive
+                        ? false
+                        : null;
+
                     var weapon = FindNewEquipment(e => e.IsEquipmentType(equipmentType),
-                        equipmentType == EquipmentType.Stone ? FindFlags.AllowNonMerchandise : FindFlags.None);
+                        equipmentType == EquipmentType.Stone ? FindFlags.AllowNonMerchandise : FindFlags.None,
+                        overrideMounted: mountedOverride);
                     if (!weapon.IsEmpty)
                     {
                         adoptedHero.BattleEquipment[slot.index] = weapon;

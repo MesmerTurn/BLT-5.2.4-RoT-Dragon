@@ -39,64 +39,79 @@ namespace BLTAdoptAHero
          PropertyOrder(1), UsedImplicitly]
         public LocString Description { get; set; } = string.Empty;
 
+        [LocDisplayName("Require Previous Class"),
+         LocDescription("If enabled, the hero must currently be in the Required Class (and optionally have enough kills) before they can switch to this class"),
+         PropertyOrder(2), UsedImplicitly]
+        public bool RequireClass { get; set; } = false;
+
+        [LocDisplayName("Required Class Name"),
+         LocDescription("Name of the class the hero must currently be in to unlock this class. Use the exact class Name as defined in this config."),
+         PropertyOrder(3), UsedImplicitly]
+        public string RequiredClassName { get; set; } = string.Empty;
+
+        [LocDisplayName("Min Kills in Required Class"),
+         LocDescription("Minimum kills the hero must have in the Required Class before switching. 0 = no kill requirement."),
+         PropertyOrder(4), UsedImplicitly]
+        public int RequiredClassMinKills { get; set; } = 0;
+
         [LocDisplayName("{=zy3uK94p}Formation"),
          LocDescription("{=1kEMFWLD}Which formation to add summoned units to"),
-         PropertyOrder(2),
+         PropertyOrder(5),
          ItemsSource(typeof(SummonHero.FormationItemSource)), UsedImplicitly]
         public string Formation { get; set; } = "LightCavalry";
 
         [LocDisplayName("{=48tkMBhb}Slot 1"),
          LocDescription("{=kpDE6URE}Item type to put in slot 1"),
          ItemsSource(typeof(EquipmentTypeItemSource)),
-         PropertyOrder(3), UsedImplicitly]
+         PropertyOrder(6), UsedImplicitly]
         public EquipmentType Slot1 { get; set; }
 
         [LocDisplayName("{=vXtJLZlw}Slot 2"),
          LocDescription("{=G5AN3s2D}Item type to put in slot 2"),
          ItemsSource(typeof(EquipmentTypeItemSource)),
-         PropertyOrder(4), UsedImplicitly]
+         PropertyOrder(7), UsedImplicitly]
         public EquipmentType Slot2 { get; set; }
 
         [LocDisplayName("{=B4LLuesN}Slot 3"),
          LocDescription("{=clxxPb9O}Item type to put in slot 3"),
          ItemsSource(typeof(EquipmentTypeItemSource)),
-         PropertyOrder(5), UsedImplicitly]
+         PropertyOrder(8), UsedImplicitly]
         public EquipmentType Slot3 { get; set; }
 
         [LocDisplayName("{=h9PK7GnU}Slot 4"),
          LocDescription("{=EUzbiqh5}Item type to put in slot 4"),
          ItemsSource(typeof(EquipmentTypeItemSource)),
-         PropertyOrder(6), UsedImplicitly]
+         PropertyOrder(9), UsedImplicitly]
         public EquipmentType Slot4 { get; set; }
 
         [LocDisplayName("{=MdYmGuin}Use Horse"),
          LocDescription("{=Q00NX1J9}Whether to allow horse (can be combined with Use Camel)"),
-         PropertyOrder(7), UsedImplicitly]
+         PropertyOrder(10), UsedImplicitly]
         public bool UseHorse { get; set; }
 
         [LocDisplayName("{=1YsQ2fC3}Use Camel"),
          LocDescription("{=Us7G1v2T}Whether to allow camel (can be combined with Use Horse"),
-         PropertyOrder(8), UsedImplicitly]
+         PropertyOrder(11), UsedImplicitly]
         public bool UseCamel { get; set; }
 
         [LocDisplayName("Use Dragon (RoT)"),
          LocDescription("Use a dragon mount from Realm of Thrones. T1-T3: ground dragon, T4-T6: flying dragon. Requires RoT 8.0."),
-         PropertyOrder(9), UsedImplicitly]
+         PropertyOrder(12), UsedImplicitly]
         public bool UseDragon { get; set; }
 
         [LocDisplayName("Use Chariot (RoT)"),
          LocDescription("Use a chariot mount from Realm of Thrones. T1-T3: basic chariot, T4-T6: advanced chariot. Requires RoT 8.0."),
-         PropertyOrder(10), UsedImplicitly]
+         PropertyOrder(13), UsedImplicitly]
         public bool UseChariot { get; set; }
 
         [LocDisplayName("{=MvddFKo4}Passive Power"),
          LocDescription("{=F8a2nXYo}Passive hero power: this will always apply to the hero (i.e. a permanent buff)"),
-         PropertyOrder(11), ExpandableObject, Expand, UsedImplicitly]
+         PropertyOrder(14), ExpandableObject, Expand, UsedImplicitly]
         public PassivePowerGroup PassivePower { get; set; } = new() { Name = "{=MvddFKo4}Passive Power" };
 
         [LocDisplayName("{=wdCMNOGd}Active Power"),
          LocDescription("{=I4ASwveG}Active hero power: this power will be triggered only when the UseHeroPower action is used by the viewer, via reward or command (i.e. a temporary buff)"),
-         PropertyOrder(12), ExpandableObject, Expand, UsedImplicitly]
+         PropertyOrder(14), ExpandableObject, Expand, UsedImplicitly]
         public ActivePowerGroup ActivePower { get; set; } = new() { Name = "{=wdCMNOGd}Active Power" };
         #endregion
 
